@@ -9,13 +9,85 @@
 class Flashcard {
   constructor(containerElement, frontText, backText) {
     this.containerElement = containerElement;
+	this.dragStart = false;
+	this.originX = null;
+    this.originY = null;
+    this.offsetX = 0;
+    this.offsetY = 0;
+    this.deltaX = 0;
+    this.deltaY = 0;
 
     this._flipCard = this._flipCard.bind(this);
+	this._createFlashcardDOM = this._createFlashcardDOM.bind(this);
+	this.onDragStart = this.onDragStart.bind(this);
+    this.onDragMove = this.onDragMove.bind(this);
+    this.onDragEnd = this.onDragEnd.bind(this);
 
     this.flashcardElement = this._createFlashcardDOM(frontText, backText);
     this.containerElement.append(this.flashcardElement);
 
     this.flashcardElement.addEventListener('pointerup', this._flipCard);
+	this.flashcardElement.addEventListener('pointerdown', this.onDragStart);
+	this.flashcardElement.addEventListener('pointermove', this.onDragMove);
+	this.flashcardElement.addEventListener('pointerup', this.onDragEnd);
+  }
+  
+  onDragStart(event)
+  {
+	this.originX = event.clientX;
+	this.originY = event.clientY;
+	this.dragStart = true;
+	event.currentTarget.setPointerCapture(event.pointerId);
+  }
+  
+  onDragMove(event)
+  {
+	if (!this.dragStart){
+		return;
+	}
+	event.preventDefault();
+	this.deltaX = event.clientX - this.originX;
+    this.deltaY = event.clientY - this.originY;
+    const translateX = this.offsetX + this.deltaX;
+    const translateY = this.offsetY + this.deltaY;
+    event.currentTarget.style.transform = 'translate(' +translateX + 'px, ' + translateY + 'px) rotate(' + translateX * 0.2 + 'deg)';
+	const select = document.querySelector('body');
+	if(this.deltaX > 150||this.deltaX < -150)
+	{
+		select.style.backgroundColor='#97b7b7';
+	}
+	else
+	{
+		select.style.backgroundColor='#d0e6df';  
+	}
+  }
+  
+  onDragEnd(event)
+  {
+	this.dragStart = false;
+	this.offsetX += event.clientX - this.originX;
+	this.offsetY += event.clientY - this.originY;
+	
+	if (this.deltaX > 150) 
+	{
+		document.dispatchEvent(new CustomEvent('right'));
+    }
+    if (this.deltaX < -150) 
+	{
+		document.dispatchEvent(new CustomEvent('left'));
+    }
+	else
+	{
+		this.originX = null;
+		this.originY = null;
+		this.offsetX = 0;
+		this.offsetY = 0;
+		this.deltaX = 0;
+		this.deltaY = 0;
+		this.flashcardElement.style.cssText = 	"transition-duration:0.6s";
+    }
+	var select=document.querySelector('body');
+	select.style.backgroundColor='#d0e6df';	
   }
 
   // Creates the DOM object representing a flashcard with the given
